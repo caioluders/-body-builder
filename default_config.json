@@ -1,0 +1,5 @@
+{
+    "theme": "templates/default.html",
+    "title": "lude.rs",
+    "ignore" : ["CNAME","index.html"]
+}
