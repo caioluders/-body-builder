@@ -1,4 +1,4 @@
-# txt_blog_builder
+# <body>builder
 
 This script will generate a `index.html` file for every directory recursively. The aim it's to create a simple static blog based on `Index Of`. 
 The main differences of a simple `Index of` to this are : 
