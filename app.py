@@ -12,18 +12,27 @@ import markdown
 
 
 def parse_file(file):
-		f = open(file, "r").read().splitlines()
-
 		try:
-				return {"title": f[0], "date": f[1]}
+			f = open(file, "r").read().splitlines()
+			return {"title": f[0], "date": f[1]}
 		except:
-				return {"title": "", "date": ""}
+			return {"title": "", "date": ""}
 
 
 def parse_markdown(file) :
 		f = open(file, "r").read()
 
-		html = markdown.markdown(f)
+		html = """<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+</head>
+
+<body>"""
+
+		html += markdown.markdown(f)
+		html += "</body></html>"
 		return html
 
 def make_index(root, dirs, files, cfg):
@@ -60,7 +69,9 @@ def make_index(root, dirs, files, cfg):
 					fw.write(html_md)
 					files_dated.append([f[:-3]+".html", metadata["title"], metadata["date"]])
 					continue
-				files_dated.append([f, metadata["title"], metadata["date"]])
+				_file_metadata  = [f, metadata["title"], metadata["date"]]
+				if _file_metadata not in files_dated : 
+					files_dated.append(_file_metadata)
 
 		files_dated = sorted(files_dated, key=operator.itemgetter(2), reverse=True)
 
@@ -73,10 +84,10 @@ def make_index(root, dirs, files, cfg):
 """ % (f[0], f[0], f[1], (datetime.datetime.fromtimestamp(int(
 						f[2])).strftime("%d/%m/%Y") if f[2].isdigit() else f[2]))
 
-		if len(files_dated) > 0:
+		if len(files_dated) > 0 and files_dated[0][0][-3:] in ["html","txt"] :
 				latest = "<h3>Latest Entry:</h3><hr>"
 				latest += open(os.path.join(path, files_dated[0][0]),
-											 encoding="utf-8").read()
+											 encoding="utf-8").read()[:200]
 				if files_dated[0][0][-3:] == "txt":
 						latest = latest.replace("\n", "<br>")
 		else:
