@@ -67,10 +67,14 @@ def make_index(root, dirs, files, cfg):
 					html_md = parse_markdown(os.path.join(path,f))
 					fw = open(os.path.join(path,f[:-3]+".html"),"w")
 					fw.write(html_md)
+					try :
+						files_dated.remove([f[:-3]+".html","<!DOCTYPE html>","<html>"])
+					except :
+						pass
 					files_dated.append([f[:-3]+".html", metadata["title"], metadata["date"]])
 					continue
 				_file_metadata  = [f, metadata["title"], metadata["date"]]
-				if _file_metadata not in files_dated : 
+				if not any( _file_metadata[0] in fff for fff in files_dated ) : 
 					files_dated.append(_file_metadata)
 
 		files_dated = sorted(files_dated, key=operator.itemgetter(2), reverse=True)
@@ -83,23 +87,12 @@ def make_index(root, dirs, files, cfg):
 </tr>
 """ % (f[0], f[0], f[1], (datetime.datetime.fromtimestamp(int(
 						f[2])).strftime("%d/%m/%Y") if f[2].isdigit() else f[2]))
-
-		if len(files_dated) > 0 and files_dated[0][0][-3:] in ["html","txt"] :
-				latest = "<h3>Latest Entry:</h3><hr>"
-				latest += open(os.path.join(path, files_dated[0][0]),
-											 encoding="utf-8").read()[:200]
-				if files_dated[0][0][-3:] == "txt":
-						latest = latest.replace("\n", "<br>")
-		else:
-				latest = ""
-
+		
 		html_result = string.Template(template).substitute({
 				"posts_table":
 				table_html,
 				"blog_title":
-				cfg["title"],
-				"latest_entry":
-				latest
+				cfg["title"]
 		})
 
 		index_file = open(os.path.join(path, "index.html"), "w", encoding="utf-8")
