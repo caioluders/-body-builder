@@ -31,7 +31,7 @@ def parse_markdown(file) :
 
 <body>"""
 
-		html += markdown.markdown(f)
+		html += markdown.markdown(f, extensions=['fenced_code'])
 		html += "</body></html>"
 		return html
 
