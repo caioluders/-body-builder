@@ -97,7 +97,9 @@ def make_index(root, dirs, files, cfg):
 				"posts_table":
 				table_html,
 				"blog_title":
-				cfg["title"]
+				cfg["title"],
+				"footnote":
+				cfg["footnote"]
 		})
 
 		index_file = open(os.path.join(path, "index.html"), "w", encoding="utf-8")

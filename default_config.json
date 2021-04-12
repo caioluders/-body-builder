@@ -1,5 +1,6 @@
 {
     "theme": "templates/default.html",
-    "title": "lude.rs",
+    "title": "A blog",
+    "footnote": "by You",
     "ignore" : ["CNAME","index.html"]
 }
