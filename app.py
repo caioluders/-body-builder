@@ -19,7 +19,7 @@ def parse_file(file):
 			return {"title": "", "date": ""}
 
 
-def parse_markdown(file , template) :
+def parse_markdown(file , template, cfg) :
 		f = open(file, "r").read()
 
 		template_style = re.search("<style>(.*)</style>", template , re.MULTILINE |
@@ -37,7 +37,7 @@ def parse_markdown(file , template) :
 <body>""" % (template_style)
 
 		html += markdown.markdown(f, extensions=['fenced_code'])
-		html += "</body></html>"
+		html += "</body><hr>%s</html>" % (cfg["footnote"])
 		return html
 
 def make_index(root, dirs, files, cfg):
@@ -69,7 +69,8 @@ def make_index(root, dirs, files, cfg):
 		for f in files:
 				metadata = parse_file(os.path.join(path, f))
 				if f[-3:] == ".md" :
-					html_md = parse_markdown(os.path.join(path,f),template)
+					html_md = parse_markdown(os.path.join(path,f), template ,
+					cfg)
 					fw = open(os.path.join(path,f[:-3]+".html"),"w")
 					fw.write(html_md)
 					try :
