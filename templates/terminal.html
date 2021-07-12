@@ -1,0 +1,50 @@
+<html>
+	<meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+	<meta content="utf-8" http-equiv="encoding">
+	<style>
+		@font-face { font-family: "gohu"; src: url("/gohu.woff") format('woff'); }
+		body {
+			font-family: 'gohu', monospace;
+			max-width: 50em;
+			margin: 0 auto;
+			color: white;
+			background: black;
+		}
+		pre {
+			font-family: 'gohu', monospace;
+			white-space: pre-wrap;
+		}
+		@media only screen and (max-width:768px) {
+			body {
+				max-width:100%;
+			}
+		}
+		a:link {
+			color: #0a0 ;
+		}
+		a:visited {
+			color: #004100 ;
+		}
+	</style>
+	<title>$blog_title</title>
+	 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<body>
+		<h1>$blog_title</h1>
+		<hr>
+		<div>
+			<table style="width:100%">
+			<col width="40%">
+			<col width="50%">
+			<col width="10%">
+				<tr>
+					<th align="left">Filename</th>
+					<th align="left">Title</th>
+					<th align="left">Date</th>
+				<tr>
+				$posts_table
+			</table>
+		</div>
+		<hr>
+		$footnote
+	</body
+</html>
