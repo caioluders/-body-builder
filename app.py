@@ -36,7 +36,7 @@ def parse_markdown(file , template, cfg) :
 
 <body>""" % (template_style)
 
-		html += markdown.markdown(f, extensions=['fenced_code'])
+		html += markdown.markdown(f, extensions=['fenced_code','codehilite'])
 		html += "</body><hr>%s</html>" % (cfg["footnote"])
 		return html
 
