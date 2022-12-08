@@ -1,6 +1,8 @@
 {
     "theme": "templates/default.html",
     "title": "A blog",
+    "url": "https://example.ple",
     "footnote": "by You",
+    "rss": false,
     "ignore" : ["CNAME","index.html"]
 }

@@ -2,10 +2,10 @@
 
 This script will generate a `index.html` file for every directory recursively. The aim it's to create a simple static blog based on `Index Of`. 
 The main differences of a simple `Index of` to this are : 
-* Last entry feature
 * Timestamp
 * Templates
 * Configurable
+* RSS
 
 ![Screenshot](https://i.imgur.com/T53JRxK.png)
 
@@ -42,7 +42,7 @@ Now on every directory will be a `index.html` file like the above image.
 
 ## Files
 
-For the Latest Entry and the Timestamp features to work, each file has to have a [Unix Time](https://en.wikipedia.org/wiki/Unix_time) on it. The first line of a file will be interpreted as the Title and the second line as the Unix timestamp.  
+For the Timestamp features to work, each file has to have a [Unix Time](https://en.wikipedia.org/wiki/Unix_time) on it. The first line of a file will be interpreted as the Title and the second line as the Unix timestamp.  
 
 ## Customizing
 If you want to customize the index files you can create a new config file and/or create a new template. 
@@ -53,7 +53,10 @@ The default config file it's [default_config.json](default_config.json).
 ```
 {
     "theme": "templates/default.html",
-    "title": "lude.rs",
+    "title": "A blog",
+    "url": "https://example.ple",
+    "footnote": "by You",
+    "rss": false,
     "ignore" : ["CNAME","index.html"]
 }
 ```
@@ -64,7 +67,13 @@ The default config file it's [default_config.json](default_config.json).
 
 `title` : (String) The title of all index files
 
-`ignore` : (Array of strings) Filenames to ignore from the listing
+`url` : (String) The final URL of the website
+
+`footnote` : (String) A footnote HTML text
+
+`rss`: (Boolean) Set to true if you want to have an `rss.xml` file on every directory
+
+`ignore` : (Array of strings) Filenames / Directories to ignore from the listing
 
 ## Template theme
 
