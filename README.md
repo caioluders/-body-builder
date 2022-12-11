@@ -3,6 +3,7 @@
 This script will generate a `index.html` file for every directory recursively. The aim it's to create a simple static blog based on `Index Of`. 
 The main differences of a simple `Index of` to this are : 
 * Timestamp
+* Markdown
 * Templates
 * Configurable
 * RSS
@@ -38,7 +39,7 @@ $ python3 app.py -p ../caioluders.github.io/
 /home/g3ol4d0/Desktop/caioluders.github.io/4rt3/Concretos
 ```
 
-Now on every directory will be a `index.html` file like the above image.
+Now on every directory will have a `index.html` file like the above image.
 
 ## Files
 
