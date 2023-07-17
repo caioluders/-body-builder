@@ -8,7 +8,7 @@ The main differences of a simple `Index of` to this are :
 * Configurable
 * RSS
 
-![Screenshot](https://i.imgur.com/T53JRxK.png)
+![Screenshot](https://imgur.com/5XpqHAZ.png)
 
 
 ## Using
