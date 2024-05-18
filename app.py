@@ -32,6 +32,7 @@ def make_rss(posts, cfg, path) :
 	description = root.createElement("description") 
 	description.appendChild(root.createTextNode(cfg["footnote"]))
 	channel.appendChild(description)
+	
 
 	for p in [tp for tp in posts if len(tp) == 3]:
 		# check if p[2] is epoch time
@@ -45,7 +46,8 @@ def make_rss(posts, cfg, path) :
 		item.appendChild(title)
 
 		link = root.createElement("link")
-		link.appendChild(root.createTextNode(cfg["url"] + path + "/" + p[0]))
+		print(p[0])
+		link.appendChild(root.createTextNode(cfg["url"] + "/" + p[0].replace(path, "")))
 		item.appendChild(link)
 
 		description = root.createElement("description")
@@ -126,13 +128,16 @@ def make_index(root, dirs, files, cfg, local_path):
 				pass
 			files_dated.append([f[:-3] + ".html", metadata["title"], metadata["date"]])
 			continue
-		_file_metadata = [f, metadata["title"], metadata["date"]]
+		elif f[-5:] == ".html":
+			continue
+		_file_metadata = [os.path.join(path, f), metadata["title"], metadata["date"]]
 		if not any(_file_metadata[0] in fff for fff in files_dated):
 			files_dated.append(_file_metadata)
 
 	files_dated = sorted(files_dated, key=operator.itemgetter(2), reverse=True)
 
 	for f in files_dated:
+		f = [f[0].replace(local_path, "").split("/")[-1] , f[1], f[2]]
 		table_html += """<tr>
 	<td><a href="%s">%s</a></td>
 	<td>%s</td>
