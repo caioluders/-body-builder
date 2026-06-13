@@ -90,6 +90,20 @@ def parse_markdown(file, template, cfg):
 	html += "</body><hr>%s</html>" % (cfg["footnote"])
 	return html
 
+def make_link_rows(links):
+	rows = ""
+	for link in links:
+		date = link.get("date", "")
+		if str(date).isdigit():
+			date = datetime.datetime.fromtimestamp(int(date)).strftime("%d/%m/%Y")
+		rows += """<tr>
+	<td><a href="%s">%s</a></td>
+	<td>%s</td>
+	<td>%s</td>
+</tr>
+""" % (link["url"], link["name"], link.get("title", ""), date)
+	return rows
+
 def make_index(root, dirs, files, cfg, local_path):
 	path = os.path.abspath(root)
 
@@ -105,6 +119,10 @@ def make_index(root, dirs, files, cfg, local_path):
 	<td></td>
 </tr>
 """
+
+	rel_path = path.replace(local_path, "").strip("/")
+	if rel_path in cfg.get("link_folders", {}):
+		table_html += make_link_rows(cfg["link_folders"][rel_path])
 
 	for d in dirs:
 		table_html += """<tr>
@@ -162,6 +180,15 @@ def main(args):
 	path = os.path.abspath(args.path)
 
 	config = json.loads(open(args.config).read())
+
+	# Prefer a theme that lives inside the site, falling back to the CWD path.
+	site_theme = os.path.join(path, config["theme"])
+	if os.path.exists(site_theme):
+		config["theme"] = site_theme
+
+	# Create folders that only hold hardcoded links so os.walk lists them.
+	for folder in config.get("link_folders", {}):
+		os.makedirs(os.path.join(path, folder), exist_ok=True)
 
 	all_posts = []
 

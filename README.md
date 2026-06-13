@@ -76,6 +76,21 @@ The default config file it's [default_config.json](default_config.json).
 
 `ignore` : (Array of strings) Filenames / Directories to ignore from the listing
 
+`link_folders` : (Object) Create folders made of hardcoded external links instead of files. Each key is a folder path (relative to the website root) and each value is an array of link objects. The folder is created automatically and listed in its parent `Index of` like any other directory.
+
+```
+"link_folders": {
+    "r4nd0m": [
+        {"name": "my-project", "url": "https://github.com/you/my-project", "title": "A cool tool", "date": "1700000000"},
+        {"name": "another", "url": "https://github.com/you/another"}
+    ]
+}
+```
+
+Each link object: `name` (the displayed text), `url` (the link target), optional `title` (description column), and optional `date` (Unix timestamp or any string).
+
+Note: the `theme` path is resolved relative to the site (`--path`) first, so you can keep the template inside the website repo; if not found there it falls back to the body-builder directory.
+
 ## Template theme
 
 This script uses the template string of Python. The default templates are [templates/default.html](templates/default.html) and [templates/dark.html](templates/dark.html) , use those as base.

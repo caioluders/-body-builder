@@ -4,5 +4,6 @@
     "url": "https://example.ple",
     "footnote": "by You",
     "rss": false,
-    "ignore" : ["CNAME","index.html"]
+    "ignore" : ["CNAME","index.html"],
+    "link_folders": {}
 }
