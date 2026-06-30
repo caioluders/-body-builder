@@ -90,19 +90,22 @@ def parse_markdown(file, template, cfg):
 	html += "</body><hr>%s</html>" % (cfg["footnote"])
 	return html
 
-def make_link_rows(links):
-	rows = ""
-	for link in links:
-		date = link.get("date", "")
-		if str(date).isdigit():
-			date = datetime.datetime.fromtimestamp(int(date)).strftime("%d/%m/%Y")
-		rows += """<tr>
+def break_on_slash(text):
+	# Strip the scheme for display and insert zero-width break opportunities
+	# after slashes so long URLs wrap.
+	text = re.sub(r"^https?://", "", text)
+	return text.replace("/", "/<wbr>")
+
+def make_link_row(link):
+	date = link.get("date", "")
+	if str(date).isdigit():
+		date = datetime.datetime.fromtimestamp(int(date)).strftime("%d/%m/%Y")
+	return """<tr>
 	<td><a href="%s">%s</a></td>
 	<td>%s</td>
 	<td>%s</td>
 </tr>
-""" % (link["url"], link["name"], link.get("title", ""), date)
-	return rows
+""" % (link["url"], break_on_slash(link["name"]), link.get("title", ""), date)
 
 def make_index(root, dirs, files, cfg, local_path):
 	path = os.path.abspath(root)
@@ -121,16 +124,25 @@ def make_index(root, dirs, files, cfg, local_path):
 """
 
 	rel_path = path.replace(local_path, "").strip("/")
-	if rel_path in cfg.get("link_folders", {}):
-		table_html += make_link_rows(cfg["link_folders"][rel_path])
+
+	hidden_dirs = cfg.get("hide_dirs", {}).get(rel_path, [])
 
 	for d in dirs:
+		if d in hidden_dirs:
+			continue
 		table_html += """<tr>
 	<td><a href="%s">%s</a></td>
 	<td>%s</td>
 	<td>%s</td>
 </tr>
 """ % (d, d, "Directory", "-")
+
+	# Rows that carry a date (hardcoded links + files), sorted together below.
+	dated_rows = []
+
+	for link in cfg.get("link_folders", {}).get(rel_path, []):
+		sortkey = int(link["date"]) if str(link.get("date", "")).isdigit() else 0
+		dated_rows.append((sortkey, make_link_row(link)))
 
 	files_dated = []
 
@@ -152,17 +164,20 @@ def make_index(root, dirs, files, cfg, local_path):
 		if not any(_file_metadata[0] in fff for fff in files_dated):
 			files_dated.append(_file_metadata)
 
-	files_dated = sorted(files_dated, key=operator.itemgetter(2), reverse=True)
-
 	for f in files_dated:
 		f = [f[0].replace(local_path, "").split("/")[-1] , f[1], f[2]]
-		table_html += """<tr>
+		sortkey = int(f[2]) if f[2].isdigit() else 0
+		row = """<tr>
 	<td><a href="%s">%s</a></td>
 	<td>%s</td>
 	<td>%s</td>
 </tr>
 """ % (f[0], f[0], f[1], (datetime.datetime.fromtimestamp(int(
 			f[2])).strftime("%d/%m/%Y") if f[2].isdigit() else f[2]))
+		dated_rows.append((sortkey, row))
+
+	dated_rows.sort(key=operator.itemgetter(0), reverse=True)
+	table_html += "".join(html for _, html in dated_rows)
 
 	html_result = string.Template(template).substitute({
 		"posts_table": table_html,

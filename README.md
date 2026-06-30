@@ -89,6 +89,14 @@ The default config file it's [default_config.json](default_config.json).
 
 Each link object: `name` (the displayed text), `url` (the link target), optional `title` (description column), and optional `date` (Unix timestamp or any string).
 
+`hide_dirs` : (Object) Hide specific subdirectories from a folder's `Index of` listing. Each key is a folder path (relative to the website root) and each value is an array of directory names to omit from that folder's listing. The directories are still generated/recursed — they just don't show up in the parent index.
+
+```
+"hide_dirs": {
+    "h4ck1ng": ["img"]
+}
+```
+
 Note: the `theme` path is resolved relative to the site (`--path`) first, so you can keep the template inside the website repo; if not found there it falls back to the body-builder directory.
 
 ## Template theme
