@@ -66,7 +66,9 @@ def make_rss(posts, cfg, path) :
 def parse_file(file):
 	try:
 		f = open(file, "r").read().splitlines()
-		return {"title": f[0], "date": f[1]}
+		# Strip a leading Markdown heading marker ("# Title" -> "Title").
+		title = re.sub(r"^#+\s*", "", f[0])
+		return {"title": title, "date": f[1]}
 	except:
 		return {"title": "", "date": ""}
 
