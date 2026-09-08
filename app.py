@@ -9,7 +9,21 @@ import operator
 import json
 import re
 import markdown
+from html import escape
+from email.utils import format_datetime
+from urllib.parse import quote, urljoin
+from zoneinfo import ZoneInfo
+from pathlib import Path
 from xml.dom import minidom
+from search_index import write_search_index
+
+def finish_page(document, cfg):
+	"""Attach site-owned scripts to every generated page, including articles."""
+	scripts = '\n'.join('<script defer src="%s"></script>' % escape(src, quote=True)
+		for src in cfg.get('page_scripts', []))
+	if scripts:
+		document = document.replace('</body>', scripts + '\n</body>', 1)
+	return document
 
 def make_rss(posts, cfg, path) :
 	root = minidom.Document()
@@ -47,7 +61,8 @@ def make_rss(posts, cfg, path) :
 
 		link = root.createElement("link")
 		print(p[0])
-		link.appendChild(root.createTextNode(cfg["url"] + "/" + p[0].replace(path, "")))
+		relative = os.path.relpath(p[0], path).replace(os.sep, '/')
+		link.appendChild(root.createTextNode(urljoin(cfg["url"].rstrip('/') + '/', quote(relative))))
 		item.appendChild(link)
 
 		description = root.createElement("description")
@@ -56,7 +71,8 @@ def make_rss(posts, cfg, path) :
 
 		pubDate = root.createElement("pubDate")
 		# convert p[2] to epoch time
-		pubDate.appendChild(root.createTextNode(datetime.datetime.fromtimestamp(int(p[2])).strftime("%a, %d %b %Y %H:%M:%S %z")))
+		published = datetime.datetime.fromtimestamp(int(p[2]), ZoneInfo(cfg.get('timezone', 'UTC')))
+		pubDate.appendChild(root.createTextNode(format_datetime(published)))
 		item.appendChild(pubDate)
 
 		channel.appendChild(item)
@@ -65,7 +81,7 @@ def make_rss(posts, cfg, path) :
 
 def parse_file(file):
 	try:
-		f = open(file, "r").read().splitlines()
+		f = Path(file).read_text(encoding='utf-8').splitlines()
 		# Strip a leading Markdown heading marker ("# Title" -> "Title").
 		title = re.sub(r"^#+\s*", "", f[0])
 		return {"title": title, "date": f[1]}
@@ -73,24 +89,31 @@ def parse_file(file):
 		return {"title": "", "date": ""}
 
 def parse_markdown(file, template, cfg):
-	f = open(file, "r").read()
+	f = Path(file).read_text(encoding='utf-8')
+	metadata = parse_file(file)
+	# A plain first-line title is also supported by the source format.
+	if f.strip():
+		first, separator, rest = f.partition('\n')
+		f = '# ' + re.sub(r'^#+\s*', '', first) + separator + rest
 
 	template_style = re.search("<style>(.*)</style>", template, re.MULTILINE | re.DOTALL).group(1)
 
 	html = """<!DOCTYPE html>
 <html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>%s</title>
 <style>
 %s
 </style>
-<head>
-  <meta charset="UTF-8">
 </head>
 
-<body>""" % (template_style)
+<body>""" % (escape(metadata['title']), template_style)
 
 	html += markdown.markdown(f, extensions=['fenced_code', 'codehilite'])
-	html += "</body><hr>%s</html>" % (cfg["footnote"])
-	return html
+	html += '<hr><footer class="site-byline">%s</footer></body></html>' % (cfg["footnote"])
+	return finish_page(html, cfg)
 
 def break_on_slash(text):
 	# Strip the scheme for display and insert zero-width break opportunities
@@ -98,34 +121,37 @@ def break_on_slash(text):
 	text = re.sub(r"^https?://", "", text)
 	return text.replace("/", "/<wbr>")
 
-def make_link_row(link):
+def make_link_row(link, cfg):
 	date = link.get("date", "")
 	if str(date).isdigit():
-		date = datetime.datetime.fromtimestamp(int(date)).strftime("%d/%m/%Y")
+		date = datetime.datetime.fromtimestamp(int(date), ZoneInfo(cfg.get('timezone', 'UTC'))).strftime("%d/%m/%Y")
 	return """<tr>
 	<td><a href="%s">%s</a></td>
 	<td>%s</td>
 	<td>%s</td>
 </tr>
-""" % (link["url"], break_on_slash(link["name"]), link.get("title", ""), date)
+""" % (escape(link["url"], quote=True), break_on_slash(escape(link["name"])), escape(link.get("title", "")), escape(str(date)))
 
 def make_index(root, dirs, files, cfg, local_path):
 	path = os.path.abspath(root)
 
-	template = open(cfg["theme"], "r").read()
+	template = Path(cfg["theme"]).read_text(encoding='utf-8')
 
 	table_html = ""
 
 	print(path)
 
-	table_html += """<tr>
+	if path != os.path.abspath(local_path):
+		table_html += """<tr>
 	<td><a href="../">../</a></td>
 	<td></td>
 	<td></td>
 </tr>
 """
 
-	rel_path = path.replace(local_path, "").strip("/")
+	rel_path = os.path.relpath(path, local_path).replace(os.sep, '/')
+	if rel_path == '.':
+		rel_path = ''
 
 	hidden_dirs = cfg.get("hide_dirs", {}).get(rel_path, [])
 
@@ -137,23 +163,22 @@ def make_index(root, dirs, files, cfg, local_path):
 	<td>%s</td>
 	<td>%s</td>
 </tr>
-""" % (d, d, "Directory", "-")
+""" % (quote(d) + "/", escape(d) + "/", "Directory", "-")
 
 	# Rows that carry a date (hardcoded links + files), sorted together below.
 	dated_rows = []
 
 	for link in cfg.get("link_folders", {}).get(rel_path, []):
 		sortkey = int(link["date"]) if str(link.get("date", "")).isdigit() else 0
-		dated_rows.append((sortkey, make_link_row(link)))
+		dated_rows.append((sortkey, make_link_row(link, cfg)))
 
 	files_dated = []
 
 	for f in files:
-		metadata = parse_file(os.path.join(path, f))
+		metadata = {"title": "RSS feed", "date": ""} if f == 'rss.xml' and path == local_path and cfg.get('rss') else parse_file(os.path.join(path, f))
 		if f[-3:] == ".md":
 			html_md = parse_markdown(os.path.join(path, f), template, cfg)
-			fw = open(os.path.join(path, f[:-3] + ".html"), "w")
-			fw.write(html_md)
+			Path(path, f[:-3] + '.html').write_text(html_md, encoding='utf-8')
 			try:
 				files_dated.remove([f[:-3] + ".html", "<!DOCTYPE html>", "<html>"])
 			except:
@@ -174,8 +199,8 @@ def make_index(root, dirs, files, cfg, local_path):
 	<td>%s</td>
 	<td>%s</td>
 </tr>
-""" % (f[0], f[0], f[1], (datetime.datetime.fromtimestamp(int(
-			f[2])).strftime("%d/%m/%Y") if f[2].isdigit() else f[2]))
+""" % (quote(f[0]), escape(f[0]), escape(f[1]), (datetime.datetime.fromtimestamp(int(
+			f[2]), ZoneInfo(cfg.get('timezone', 'UTC'))).strftime("%d/%m/%Y") if f[2].isdigit() else escape(f[2])))
 		dated_rows.append((sortkey, row))
 
 	dated_rows.sort(key=operator.itemgetter(0), reverse=True)
@@ -187,16 +212,14 @@ def make_index(root, dirs, files, cfg, local_path):
 		"footnote": cfg["footnote"]
 	})
 
-	index_file = open(os.path.join(path, "index.html"), "w", encoding="utf-8")
-	index_file.write(html_result)
-	index_file.close()
+	Path(path, 'index.html').write_text(finish_page(html_result, cfg), encoding='utf-8')
 
-	return files_dated
+	return [[os.path.join(path, f[0]), f[1], f[2]] for f in files_dated]
 
 def main(args):
 	path = os.path.abspath(args.path)
 
-	config = json.loads(open(args.config).read())
+	config = json.loads(Path(args.config).read_text(encoding='utf-8'))
 
 	# Prefer a theme that lives inside the site, falling back to the CWD path.
 	site_theme = os.path.join(path, config["theme"])
@@ -208,21 +231,25 @@ def main(args):
 		os.makedirs(os.path.join(path, folder), exist_ok=True)
 
 	all_posts = []
+	search_sources = []
 
 	for root, dirs, files in os.walk(path):
-		files = [
+		if root == path and config.get('rss') and 'rss.xml' not in files:
+			files.append('rss.xml')
+		files = sorted([
 			f for f in files if not f[0] == '.' and f not in config["ignore"]
-		]
-		dirs[:] = [d for d in dirs
-				   if not d[0] == '.' and d not in config["ignore"]]  # ignore hidden files/dirs
+		])
+		dirs[:] = sorted(d for d in dirs
+				   if not d[0] == '.' and d not in config["ignore"])  # ignore hidden files/dirs
+		search_sources.extend(os.path.join(root, f) for f in files if f.endswith(('.md', '.txt')))
 
 		posts = make_index(os.path.join(path, root), dirs, files, config, path)
 		all_posts.extend(posts)
+	if config.get('search_index'):
+		write_search_index(search_sources, config, path)
 
 	if config["rss"]:
-		rss_file = open(os.path.join(path, "rss.xml"), "w", encoding="utf-8")
-		rss_file.write(make_rss(all_posts, config, path))
-		rss_file.close()
+		Path(path, 'rss.xml').write_text(make_rss(all_posts, config, path), encoding='utf-8')
 
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser(

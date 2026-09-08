@@ -1,2 +1,2 @@
-Markdown
-pygments
+Markdown==3.8.2
+Pygments==2.19.2

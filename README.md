@@ -30,16 +30,52 @@ optional arguments:
 For the default usage simply :
 
 ```
-$ python3 app.py -p ../caioluders.github.io/ 
-/home/g3ol4d0/Desktop/caioluders.github.io
-/home/g3ol4d0/Desktop/caioluders.github.io/h4ck1ng
-/home/g3ol4d0/Desktop/caioluders.github.io/4rt3
-/home/g3ol4d0/Desktop/caioluders.github.io/4rt3/Haikais
-/home/g3ol4d0/Desktop/caioluders.github.io/4rt3/1337
-/home/g3ol4d0/Desktop/caioluders.github.io/4rt3/Concretos
+$ python3 app.py -p /path/to/site -c /path/to/site/config.json
+/path/to/site
+/path/to/site/posts
+/path/to/site/notes
 ```
 
 Now on every directory will have a `index.html` file like the above image.
+
+## Optional page scripts and local search
+
+Python 3.9+ is required. Install the pinned dependencies once:
+
+```sh
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements.txt
+```
+
+One invocation generates directory indexes, Markdown pages, optional RSS, and optional search data:
+
+```sh
+.venv/bin/python app.py -p /path/to/site -c /path/to/site/config.json
+```
+
+These optional config fields apply to any site:
+
+```json
+{
+    "page_scripts": ["/assets/site.js"],
+    "search_index": "assets/search-index.json",
+    "timezone": "UTC"
+}
+```
+
+- `page_scripts`: deferred script URLs inserted before `</body>` in every generated page. Keep the JavaScript in your site; do not also include these scripts in its template. Omit this option for pages without injected scripts.
+- `search_index`: output path relative to the site root. Omit it to disable search-data generation. The builder supplies JSON; the site supplies its search UI. Each entry has `title`, `url`, `category`, `date`, and plain-text `content`.
+- `timezone`: IANA timezone used for directory dates, search dates, and RSS dates; defaults to `UTC`.
+
+Search automatically includes nonempty `.md` and `.txt` sources throughout the same directory traversal used for page generation, plus configured `link_folders`. It respects `ignore` and hidden paths; `hide_dirs` only hides directory navigation, as before. New folders require no search-code changes. Local result URLs and RSS links preserve nested paths and the path prefix from `url`.
+
+Keep templates and support-asset directories in `ignore` so their contents are not listed or indexed. Markdown articles inherit the configured template's inline styles and receive a title, viewport metadata, footnote, and configured scripts. Their first line becomes an H1, with or without a leading Markdown heading marker. Handwritten HTML files are left untouched, except `index.html`: directory index files are generated output and will be overwritten. Removing a Markdown source removes its navigation/search/RSS entries on the next build; its old HTML file must be removed separately if it should no longer be directly accessible.
+
+Run the generic build regression tests:
+
+```sh
+.venv/bin/python -m unittest discover -s tests -v
+```
 
 ## Files
 
@@ -80,7 +116,7 @@ The default config file it's [default_config.json](default_config.json).
 
 ```
 "link_folders": {
-    "r4nd0m": [
+    "projects": [
         {"name": "my-project", "url": "https://github.com/you/my-project", "title": "A cool tool", "date": "1700000000"},
         {"name": "another", "url": "https://github.com/you/another"}
     ]
@@ -93,7 +129,7 @@ Each link object: `name` (the displayed text), `url` (the link target), optional
 
 ```
 "hide_dirs": {
-    "h4ck1ng": ["img"]
+    "posts": ["images"]
 }
 ```
 
